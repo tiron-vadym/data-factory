@@ -16,6 +16,8 @@ This project uses FastAPI to create a RESTful API integrated with SQLAlchemy for
    source venv/Scripts/activate
    pip install -r requirements.txt
    set SQLALCHEMY_DATABASE_URL=<set database url>
+   alembic upgrade head
+   uvicorn main:app --reload
    
 
 ## Overview
