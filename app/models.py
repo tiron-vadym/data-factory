@@ -60,7 +60,7 @@ class Plan(Base):
     sum = Column(Float, nullable=False)
     category_id = Column(Integer, ForeignKey("dictionary.id"), nullable=False)
 
-    category = relationship("Dictionary", back_populates="plans")
+    category = relationship("Dictionary")
 
 
 class Payment(Base):
@@ -73,4 +73,4 @@ class Payment(Base):
     type_id = Column(Integer, ForeignKey("dictionary.id"), nullable=False)
 
     credit = relationship("Credit", back_populates="payments")
-    payment_type = relationship("Dictionary", back_populates="payments_tp")
+    payment_type = relationship("Dictionary")
