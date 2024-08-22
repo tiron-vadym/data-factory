@@ -55,22 +55,22 @@ def insert_plans(db: Session, plans: List[schemas.PlanInsert]):
             raise HTTPException(
                 status_code=400,
                 detail=f"Sum for period {plan.period} "
-                       f"and category {plan.category_id} cannot be empty"
+                       f"and category {plan.category_name} cannot be empty"
             )
 
         existing_plan = db.query(models.Plan).filter(
             models.Plan.period == plan.period,
-            models.Plan.category_id == plan.category_id
+            models.Plan.category_name == plan.category_name
         ).first()
         if existing_plan:
             raise HTTPException(status_code=400,
                                 detail=f"Plan for period {plan.period} and "
-                                       f"category {plan.category_id}"
+                                       f"category {plan.category_name}"
                                        f" already exists")
 
         db_plan = models.Plan(
             period=plan.period,
-            category_id=plan.category_id,
+            category_name=plan.category_name,
             sum=plan.sum
         )
         db.add(db_plan)
@@ -81,19 +81,21 @@ def get_plan_performance(
         db: Session,
         target_date: date
 ) -> List[schemas.PlanPerformance]:
+    start_of_month = date(target_date.year, target_date.month, 1)
+
     plans = db.query(models.Plan).filter(
-        models.Plan.period <= target_date
+        models.Plan.period.between(start_of_month, target_date)
     ).all()
+
     results = []
 
     for plan in plans:
         actual_amount = 0
-        plan_start_date = date(plan.period.year, plan.period.month, 1)
 
         if plan.category.name == "видача":
             creds = db.query(models.Credit).filter(
                 models.Credit.issuance_date.between(
-                    plan_start_date,
+                    start_of_month,
                     target_date
                 )
             ).all()
@@ -102,18 +104,19 @@ def get_plan_performance(
         elif plan.category.name == "збір":
             payments = db.query(models.Payment).filter(
                 models.Payment.payment_date.between(
-                    plan_start_date,
+                    start_of_month,
                     target_date
                 )
             ).all()
             actual_amount = sum(payment.sum for payment in payments)
 
-        fulfillment_percentage = (actual_amount / plan.sum) * 100 \
-            if plan.sum else 0
+        fulfillment_percentage = round(
+            (actual_amount / plan.sum) * 100, 2
+        ) if plan.sum else 0
 
         performance_data = schemas.PlanPerformance(
             period=plan.period,
-            category_id=plan.category_id,
+            category_name=plan.category_name,
             plan_amount=plan.sum,
             actual_amount=actual_amount,
             fulfillment_percentage=fulfillment_percentage
@@ -169,12 +172,12 @@ def get_year_performance(
         ).first()
         issuance_plan_amount = issuance_plan.sum if issuance_plan else 0
 
-        issuance_fulfillment_percentage = (
-            (issuance_actual_amount / issuance_plan_amount) * 100
+        issuance_fulfillment_percentage = round(
+            (issuance_actual_amount / issuance_plan_amount) * 100, 2
         ) if issuance_plan_amount else 0
 
-        issuance_year_percentage = (
-            (issuance_actual_amount / total_issuance_amount) * 100
+        issuance_year_percentage = round(
+            (issuance_actual_amount / total_issuance_amount) * 100, 2
         ) if total_issuance_amount else 0
 
         payments = db.query(models.Payment).filter(
@@ -192,12 +195,12 @@ def get_year_performance(
         ).first()
         payment_plan_amount = payment_plan.sum if payment_plan else 0
 
-        payment_fulfillment_percentage = (
-            (payment_actual_amount / payment_plan_amount) * 100
+        payment_fulfillment_percentage = round(
+            (payment_actual_amount / payment_plan_amount) * 100, 2
         ) if payment_plan_amount else 0
 
-        payment_year_percentage = (
-            (payment_actual_amount / total_payment_amount) * 100
+        payment_year_percentage = round(
+            (payment_actual_amount / total_payment_amount) * 100, 2
         ) if total_payment_amount else 0
 
         performance_data = schemas.YearPerformance(
