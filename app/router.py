@@ -1,14 +1,14 @@
 from io import StringIO
 from typing import List
 from datetime import date
+from starlette.status import HTTP_201_CREATED
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Depends, UploadFile, File, Response, Query
 from sqlalchemy.orm import Session
 import pandas as pd
 
-from app import crud, schemas
+from app import crud, schemas, models
 from dependencies import get_db
-
 
 router = APIRouter()
 
@@ -29,16 +29,26 @@ async def plans_insert(
     df = pd.read_csv(csv_file, sep="\t")
     df["period"] = pd.to_datetime(df["period"], format="%d.%m.%Y").dt.date
 
+    categories = db.query(models.Dictionary).all()
+    category_map = {category.id: category.name for category in categories}
+    df["category_name"] = df["category_id"].map(category_map)
+    df = df.drop(columns=["category_id"])
+
     records = df.to_dict(orient="records")
     plans = [schemas.PlanInsert(**record) for record in records]
     crud.insert_plans(db, plans)
 
-    return "Plans successfully inserted"
+    return Response(
+        content="Plans successfully inserted",
+        status_code=HTTP_201_CREATED
+    )
 
 
 @router.get("/plans_performance", response_model=List[schemas.PlanPerformance])
-def plans_performance(db: Session = Depends(get_db)):
-    target_date = date.today()
+def plans_performance(
+        target_date: date = Query(default=date.today()),
+        db: Session = Depends(get_db)
+):
     return crud.get_plan_performance(db, target_date=target_date)
 
 
