@@ -55,22 +55,22 @@ def insert_plans(db: Session, plans: List[schemas.PlanInsert]):
             raise HTTPException(
                 status_code=400,
                 detail=f"Sum for period {plan.period} "
-                       f"and category {plan.category_name} cannot be empty"
+                       f"and category {plan.category_id} cannot be empty"
             )
 
         existing_plan = db.query(models.Plan).filter(
             models.Plan.period == plan.period,
-            models.Plan.category_name == plan.category_name
+            models.Plan.category_id == plan.category_id
         ).first()
         if existing_plan:
             raise HTTPException(status_code=400,
                                 detail=f"Plan for period {plan.period} and "
-                                       f"category {plan.category_name}"
+                                       f"category {plan.category_id}"
                                        f" already exists")
 
         db_plan = models.Plan(
             period=plan.period,
-            category_name=plan.category_name,
+            category_id=plan.category_id,
             sum=plan.sum
         )
         db.add(db_plan)
@@ -116,7 +116,7 @@ def get_plan_performance(
 
         performance_data = schemas.PlanPerformance(
             period=plan.period,
-            category_name=plan.category_name,
+            category_id=plan.category_id,
             plan_amount=plan.sum,
             actual_amount=actual_amount,
             fulfillment_percentage=fulfillment_percentage

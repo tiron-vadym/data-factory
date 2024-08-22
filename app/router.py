@@ -1,4 +1,3 @@
-from io import StringIO
 from typing import List
 from datetime import date
 from starlette.status import HTTP_201_CREATED
@@ -24,15 +23,12 @@ async def plans_insert(
         db: Session = Depends(get_db)
 ):
     contents = await file.read()
-    contents = contents.decode("utf-8")
-    csv_file = StringIO(contents)
-    df = pd.read_csv(csv_file, sep="\t")
-    df["period"] = pd.to_datetime(df["period"], format="%d.%m.%Y").dt.date
+    df = pd.read_excel(contents)
 
     categories = db.query(models.Dictionary).all()
-    category_map = {category.id: category.name for category in categories}
-    df["category_name"] = df["category_id"].map(category_map)
-    df = df.drop(columns=["category_id"])
+    category_map = {category.name: category.id for category in categories}
+    df["category_id"] = df["category"].map(category_map)
+    df = df.drop(columns=["category"])
 
     records = df.to_dict(orient="records")
     plans = [schemas.PlanInsert(**record) for record in records]
