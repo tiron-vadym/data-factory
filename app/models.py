@@ -58,7 +58,7 @@ class Plan(Base):
     id = Column(Integer, primary_key=True, index=True)
     period = Column(Date, nullable=False)
     sum = Column(Float, nullable=False)
-    category_id = Column(Integer, ForeignKey("dictionary.id"), nullable=False)
+    category_name = Column(String(10), ForeignKey("dictionary.name"), nullable=False)
 
     category = relationship("Dictionary")
 
