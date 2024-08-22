@@ -19,12 +19,12 @@ class CreditInfo(BaseModel):
 class PlanInsert(BaseModel):
     period: date
     sum: float
-    category_id: int
+    category_name: str
 
 
 class PlanPerformance(BaseModel):
     period: date
-    category_id: int
+    category_name: str
     plan_amount: float
     actual_amount: float
     fulfillment_percentage: float
